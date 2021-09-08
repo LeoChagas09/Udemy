@@ -1,26 +1,23 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.usersRouter = void 0;
-const router_1 = require("../common/router");
+const model_router_1 = require("../common/model-router");
 const users_model_1 = require("./users.model");
-class UsersRouter extends router_1.Router {
+class UsersRouter extends model_router_1.ModelRouter {
+    constructor() {
+        super(users_model_1.User);
+        this.on('beforeRender', document => {
+            document.password = undefined;
+            //delete document.password
+        });
+    }
     applyRoutes(application) {
-        application.get('/users', (req, resp, next) => {
-            users_model_1.User.findAll().then(users => {
-                resp.json(users);
-                return next();
-            });
-        });
-        application.get('/users/:id', (req, resp, next) => {
-            users_model_1.User.findById(req.params.id).then(user => {
-                if (user) {
-                    resp.json(user);
-                    return next();
-                }
-                resp.send(404);
-                return next();
-            });
-        });
+        application.get('/users', this.findAll);
+        application.get('/users/:id', [this.validateId, this.findById]);
+        application.post('/users', this.save);
+        application.put('/users/:id', [this.validateId, this.replace]);
+        application.patch('/users/:id', [this.validateId, this.update]);
+        application.del('/users/:id', [this.validateId, this.delete]);
     }
 }
 exports.usersRouter = new UsersRouter();

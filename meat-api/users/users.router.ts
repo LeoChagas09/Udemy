@@ -1,29 +1,29 @@
-import{Router} from '../common/router'
+import {ModelRouter} from '../common/model-router'
 import * as restify from 'restify'
+import {NotFoundError} from 'restify-errors'
 import {User} from './users.model'
 
-class UsersRouter extends Router {
-    applyRoutes(application: restify.Server){
 
-        application.get('/users', (req, resp, next) => {
-            User.findAll().then(users => {
-              resp.json(users)
-              return next()  
-            })
-        })
+class UsersRouter extends ModelRouter<User> {
 
-        application.get('/users/:id', (req, resp, next) => {
-            User.findById(req.params.id).then(user => {
-                if(user){
-                    resp.json(user)
-                    return next()
-                }
+  constructor(){
+    super(User)
+    this.on('beforeRender', document=>{
+      document.password = undefined
+      //delete document.password
+    })
+  }
 
-                resp.send(404)
-                return next()
-            })
-        })
-    }
+  applyRoutes(application: restify.Server){
+
+    application.get('/users', this.findAll)
+    application.get('/users/:id', [this.validateId, this.findById])
+    application.post('/users', this.save)
+    application.put('/users/:id', [this.validateId,this.replace])
+    application.patch('/users/:id', [this.validateId,this.update])
+    application.del('/users/:id', [this.validateId,this.delete])
+
+  }
 }
 
 export const usersRouter = new UsersRouter()
