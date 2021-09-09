@@ -2,10 +2,17 @@ import {ModelRouter} from '../common/model-router'
 import * as restify from 'restify'
 import {NotFoundError} from 'restify-errors'
 import {Restaurant} from './restaurants.model'
+import {authorize} from '../security/authz.handler'
 
 class RestaurantsRouter extends ModelRouter<Restaurant> {
   constructor(){
     super(Restaurant)
+  }
+
+  envelope(document){
+    let resource = super.envelope(document)
+    resource._links.menu = `${this.basePath}/${resource._id}/menu`
+    return resource
   }
 
   findMenu = (req, resp, next) => {
@@ -35,15 +42,15 @@ class RestaurantsRouter extends ModelRouter<Restaurant> {
   }
 
   applyRoutes(application: restify.Server){
-    application.get('/restaurants', this.findAll)
-    application.get('/restaurants/:id', [this.validateId, this.findById])
-    application.post('/restaurants', this.save)
-    application.put('/restaurants/:id', [this.validateId,this.replace])
-    application.patch('/restaurants/:id', [this.validateId,this.update])
-    application.del('/restaurants/:id', [this.validateId,this.delete])
+    application.get(`${this.basePath}`, this.findAll)
+    application.get(`${this.basePath}/:id`, [this.validateId, this.findById])
+    application.post(`${this.basePath}`, [authorize('admin'),this.save])
+    application.put(`${this.basePath}/:id`, [authorize('admin'),this.validateId,this.replace])
+    application.patch(`${this.basePath}/:id`, [authorize('admin'),this.validateId,this.update])
+    application.del(`${this.basePath}/:id`, [authorize('admin'),this.validateId,this.delete])
 
-    application.get('/restaurants/:id/menu', [this.validateId, this.findMenu])
-    application.put('/restaurants/:id/menu', [this.validateId, this.replaceMenu])
+    application.get(`${this.basePath}/:id/menu`, [this.validateId, this.findMenu])
+    application.put(`${this.basePath}/:id/menu`, [authorize('admin'),this.validateId, this.replaceMenu])
   }
 
 }
